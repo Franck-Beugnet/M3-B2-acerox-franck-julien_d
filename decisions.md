@@ -7,12 +7,19 @@
 
 > Quelle source intégrez-vous en M3-B2 ? Argumentez en 3 lignes max.
 
-**Choix** : ☐ `capteurs_iot.csv` (CSV ~51k lignes) ☐ `erp_export.json` (JSON ~2k ordres)
+**Choix** : ☑ `capteurs_iot.csv` (CSV ~51k lignes) ☐ `erp_export.json` (JSON ~2k ordres)
 
 **Argument** :
-- ...
-- ...
-- ...
+- IoT : volumétrie réelle — 51k lignes = apprendre à gérer l'échelle, migration + ingestion performantes
+- IoT : qualité données complexe — capteurs défaillants (Roubaix L3), valeurs aberrantes, manquants fréquents = enjeu production réel
+- IoT : normalisation structurante — timestamps à parser, numériques flottants avec variation, gestion anomalies capteur = apprentissage robustesse
+
+**Raison du rejet d'ERP** : On privilégie le jeux de données basé sur le volume avec un parsing de données plutot que celui sur l'erp avec des enjeux RGPD 
+
+**Réflexe stockage (3 lignes)** :
+- SQLite relationnelle ici : données IoT structurées, schéma stable, besoins OLTP légers et volumétrie locale (< 1 Go) ; c'est l'option la plus simple et suffisante.
+- MongoDB si la source devient fortement semi-structurée (JSON imbriqué, schéma variable, évolutions fréquentes) et que la flexibilité document apporte plus que les jointures SQL.
+- Parquet si l'usage devient surtout analytique/append-only (agrégations massives, lecture colonne, historisation) ou si le volume augmente au-delà du confortable en SQLite.
 
 ## 2. Stratégie de gestion des doublons
 
