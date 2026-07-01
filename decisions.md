@@ -1,4 +1,4 @@
-# Decisions — Binôme `<prénom1>` × `<prénom2>` (M3-B2 Acerox)
+# Decisions — Binôme `Franck` × `Julien D` (M3-B2 Acerox)
 
 > Document à compléter à 2 pendant la phase sync (15 min avant de coder).
 > Servira de référence pendant la phase async + RDV vendredi.
@@ -26,9 +26,14 @@
 > Comment gérez-vous les doublons à l'ingestion ? `INSERT OR IGNORE` SQL,
 > upsert applicatif, dédup pandas avant insertion ?
 
-**Choix** : ...
+**Choix** : Déduplication en 2 temps :
+- en amont dans pandas sur la clé métier (`timestamp`, `sensor_id`) avec conservation de la dernière valeur,
+- puis garde-fou en base avec contrainte d'unicité (`uq_mesures_iot_timestamp_sensor`) + filtrage applicatif avant insert.
 
-**Argument** : ...
+**Argument** :
+- L'ingestion doit rester idempotente même si le fichier source contient des doublons.
+- Le nettoyage pandas réduit les inserts inutiles et garde une version stable des mesures.
+- La contrainte SQL protège l'intégrité même si la logique applicative évolue.
 
 ## 3. Stratégie RGPD (si vous prenez ERP)
 
@@ -44,9 +49,9 @@
 
 > Quels 3 tests minimum allez-vous écrire ?
 
-1. Migration appliquée → la table existe : ...
-2. Ingestion d'un fichier valide → N lignes insérées sans doublon : ...
-3. Ingestion fichier malformé → exception claire, BDD inchangée : ...
+1. Migration appliquée → la table existe : `test_mesures_iot_table_exists_after_schema_creation` vérifie la présence de `mesures_iot`.
+2. Ingestion d'un fichier valide → N lignes insérées sans doublon : `test_ingest_valid_file_inserts_n_rows_without_duplicates` attend `inserted == 3` et des clés (`timestamp`, `sensor_id`) uniques.
+3. Ingestion fichier malformé → exception claire, BDD inchangée : `test_ingest_malformed_file_raises_exception_without_modifying_db` attend `NormalizationError` et 0 ligne en base avant/après.
 
 ## 5. Convention binôme
 
@@ -62,12 +67,12 @@
 
 | Clause du contrat | Honorée ? | Comment / où dans le code |
 |---|---|---|
-| Unicité respectée (ingestion idempotente) | ☐ | ... |
-| Manquants traités explicitement | ☐ | ... |
-| Capteur défaillant Roubaix L3 : repéré + décision tracée (écarter / marquer / aval) *(option A)* | ☐ / s.o. | ... |
+| Unicité respectée (ingestion idempotente) | ☑ | Clé unique en base via `UniqueConstraint(timestamp, sensor_id)` + dédup pandas `drop_duplicates(subset=["timestamp", "sensor_id"], keep="last")` + filtre des clés déjà présentes avant insert. |
+| Manquants traités explicitement | ☑ | `dropna` sur champs obligatoires (`timestamp`, `site`, `line_id`, `sensor_id`, `temperature_c`, `debit_uh`) ; `vibration_mms` conservé nullable (`None` en base). |
+| Capteur défaillant Roubaix L3 : repéré + décision tracée (écarter / marquer / aval) *(option A)* | ☑ | Décision : écarter à l'ingestion via `faulty_mask` (site Roubaix, line_id=3, température 140-160, vibration 12.0), puis filtrage `df = df.loc[~faulty_mask]`. |
 | `ouvrier_id` hashé ou retiré, jamais en clair *(option B)* | ☐ / s.o. | ... |
-| Types conformes (DateTime, numériques typés) | ☐ | ... |
+| Types conformes (DateTime, numériques typés) | ☑ | Parsing explicite: `pd.to_datetime` pour `timestamp`, `pd.to_numeric` pour numériques, cast `line_id` en `int`; modèle SQLAlchemy typé (`DateTime`, `Float`, `Integer`, `String`). |
 
 ---
 
-*Décisions tracées par le binôme `<prénom1>` × `<prénom2>` — `<date>`.*
+*Décisions tracées par le binôme `Julien D` × `Franck` — `01/07/2026`.*

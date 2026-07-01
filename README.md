@@ -4,6 +4,18 @@
 > mercredi crée son repo perso depuis ce template (« Use this template »)
 > et invite l'autre comme collaborateur.
 
+## Architecture du pipeline (M3)
+
+```mermaid
+flowchart LR
+   A[data/capteurs_iot.csv] --> B[src/ingest_iot.py<br/>normalisation + dedup]
+   B --> C[src/models.py<br/>MesureIoT]
+   C --> D[(data/acerox.db)]
+   E[alembic/versions/0002_add_mesures_iot_table.py] --> D
+   F[tests/test_ingest_iot.py] --> B
+   F --> D
+```
+
 ---
 
 ## 🚀 Démarrage (5 commandes)
@@ -23,7 +35,10 @@ pip install -r requirements.txt
 alembic upgrade head
 python -m src.pipeline_existante
 
-# 4. Vérification tests initiaux verts
+# 4. Alimentation BDD (ingestion iot)
+python -m src.ingest_iot
+
+# 5. Vérification tests initiaux verts
 pytest -v
 ```
 
@@ -133,6 +148,14 @@ Le rollback sert à corriger un déploiement raté ou à rétablir vite un
 service quand la migration casse l’application. Ce n’est pas une commande de
 routine : on l’utilise quand la migration a été validée comme fautive, puis on
 réapplique une version corrigée avec `alembic upgrade head`.
+
+### Préparation M5 (orchestration future)
+
+1. Extraire l'étape de normalisation dans une tâche orchestrable isolée (fonction pure + I/O explicites).
+2. Introduire un DAG simple avec ordre des tâches: migration, ingestion, contrôles qualité, publication.
+3. Ajouter des métriques d'exécution (durée, lignes lues/insérées/rejetées) pour supervision run par run.
+4. Prévoir des retries ciblés sur les erreurs transitoires (lecture fichier, lock SQLite) avec backoff.
+5. Externaliser la config (chemins, seuils qualité, stratégie capteur défaillant) pour piloter les runs sans modifier le code.
 
 ---
 
