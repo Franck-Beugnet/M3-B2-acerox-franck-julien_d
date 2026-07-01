@@ -122,6 +122,18 @@ Cf. [`./ressources/`](./ressources/) — 5 mini-cours, lecture juste-à-temps.
 
 → Compétences visées : **C1 — imiter** renforcé + **C3 — transposer** (palier final).
 
+### Rollback Alembic
+
+Si une migration est boguée ou qu’un déploiement doit être annulé, revenez
+à l’état précédent avec `alembic downgrade -1`. Cette commande retire la
+dernière migration appliquée, donc la table ou les colonnes ajoutées par ce
+dernier changement.
+
+Le rollback sert à corriger un déploiement raté ou à rétablir vite un
+service quand la migration casse l’application. Ce n’est pas une commande de
+routine : on l’utilise quand la migration a été validée comme fautive, puis on
+réapplique une version corrigée avec `alembic upgrade head`.
+
 ---
 
 ## ✅ Conventions de code
