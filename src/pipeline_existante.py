@@ -9,6 +9,7 @@ Usage::
 """
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pandas as pd
@@ -17,6 +18,8 @@ from src.db import engine, get_session
 from src.models import Base, Produit
 
 PRODUITS_CSV: Path = Path(__file__).parent.parent / "data" / "produits.csv"
+
+logger = logging.getLogger(__name__)
 
 
 def init_db() -> None:
@@ -60,7 +63,10 @@ def main() -> None:
     """Init BDD + chargement référentiel produits."""
     init_db()
     n = ingest_produits()
-    print(f"Pipeline existante : {n} produit(s) inséré(s) (idempotent — relancer ne duplique pas).")
+    logger.info(
+        "Pipeline existante : %s produit(s) insere(s) (idempotent - relancer ne duplique pas).",
+        n,
+    )
 
 
 if __name__ == "__main__":

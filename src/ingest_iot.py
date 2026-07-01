@@ -5,6 +5,7 @@ Usage:
 """
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import pandas as pd
@@ -22,6 +23,8 @@ REQUIRED_COLUMNS = (
     "vibration_mms",
     "debit_uh",
 )
+
+logger = logging.getLogger(__name__)
 
 
 class NormalizationError(ValueError):
@@ -131,7 +134,7 @@ def main() -> None:
     """CLI entrypoint for local ingestion runs."""
     init_db()
     inserted = ingest_mesures_iot()
-    print(f"Ingestion IoT: {inserted} ligne(s) inseree(s) (idempotent).")
+    logger.info("Ingestion IoT: %s ligne(s) inseree(s) (idempotent).", inserted)
 
 
 if __name__ == "__main__":
